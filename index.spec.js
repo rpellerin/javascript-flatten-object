@@ -5,7 +5,7 @@ const toFlatten = {
     obj: { yo: 1, ya: 2 }
   },
   display: {
-    1: [1, 3]
+    1: [1, [42, 43], { string: 'yolo', tab: [50] }]
   }
 }
 
@@ -14,20 +14,28 @@ const expectedResult = {
   'popup.2': false,
   'popup.obj.yo': 1,
   'popup.obj.ya': 2,
-  'display.1': [1, 3]
+  'display.1[0]': 1,
+  'display.1[1][0]': 42,
+  'display.1[1][1]': 43,
+  'display.1[2].string': 'yolo',
+  'display.1[2].tab[0]': 50
 }
 
-const isObject = value => Object(value) === value
+/**
+ * Returns true for objects and arrays
+ */
+const isObjectOrArray = value => Object(value) === value
 
 const flattenObject = (obj, parent) => {
+  if (!isObjectOrArray(obj)) return parent ? { [parent]: obj } : obj
+
+  const isArray = Array.isArray(obj)
   const prefix = parent ? `${parent}.` : ''
-  return Object.keys(obj).reduce((acc, key) => {
-    if (isObject(obj[key]) && !Array.isArray(obj[key])) {
-      const yo = flattenObject(obj[key], prefix + key)
-      return { ...acc, ...yo }
-    }
-    acc[prefix + key] = obj[key]
-    return acc
+
+  return (isArray ? obj : Object.keys(obj)).reduce((acc, property, i) => {
+    const childsParent = isArray ? `${parent}[${i}]` : `${prefix}${property}`
+    const child = isArray ? property : obj[property]
+    return { ...acc, ...flattenObject(child, childsParent) }
   }, {})
 }
 
